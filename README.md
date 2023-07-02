@@ -41,6 +41,11 @@ There are several motivations for this framework:
 ## Specification
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119 and RFC 8174.
 
+## Definitions
+- Factory
+- Owner's Contract
+- Implementation Contract
+
 ### Overview
 A Factory shall be constructed with two parameters:
  - ERC721 compliant Owner's contract address
@@ -57,23 +62,10 @@ Owner's tokens can be spent at the Factory. Upon spending an Owner's token, a cl
 The bearer of the Owner's token shall be the owner expressed by the implementation contract via the owner() interface which shall override the ERC167 owner interface typically seen at the time of this publication.
 
 Owner's Token ID #1 shall own the first implementation deployment, Owner's Token ID #2 shall own the second implementation deployment, and so on.
-### Constructor
-```solidity
-constructor(address ownersImplementation_, address cloneImplementation_,
-  string memory name_,
-  string memory symbol_,
-  string memory tokenURI_,
-  uint256 maxSupply_,
-  uint256 maxMint_) {
-        _ownersImplementation = ownersImplementation_;
-        _cloneImplementation = cloneImplementation_;
-        _createOwnersContract(name_, symbol_, tokenURI_, maxSupply_, maxMint_);
-    }
-```
 
 ### Interfaces
 
-
+#### Factory
 #### Public Interfaces
 ```solidity
 function ownersAddr() public view returns (address) 
