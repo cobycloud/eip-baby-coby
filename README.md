@@ -62,6 +62,23 @@ Owner's Token ID #1 shall own the first implementation deployment, Owner's Token
 
 ## Rationale
 
+### Problem #1 Lack of support for transferablity or sale of smart contracts on open markets.
+
+Current reliance on ERC173 does not afford contracts to be transferred on open markets such as Blur or Opensea. To enable contracts to immediately take advantage of current infrastructures, this improvement seeks to recommend a solution in which smart contract ownership can be bought and sold.  
+
+### Problem #2 Look-alike deployments
+
+##### The ethereum ecosystem is filled with development and deployments that are nearly identical, however as a community, individuals do not have a system for taking advantage of a factory to reduce gas costs. By utilizing an ERC1167 factory in the implementation of cloning templates which adhere to our specification, we see several benefits such as:
+- Reduce gas costs across like-minded community deployments
+- Consolidated security audits (audit the integrity of a clone)
+- Common parameterization flags and interfaces (clones share same state potentials)
+
+
+### Problem #3 Contract Portfolios
+
+#### 
+
+
 <!--
   The rationale fleshes out the specification by describing what motivated the design and why particular design decisions were made. It should describe alternate designs that were considered and related work, e.g. how the feature is supported in other languages.
 
