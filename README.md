@@ -57,8 +57,22 @@ Owner's tokens can be spent at the Factory. Upon spending an Owner's token, a cl
 The bearer of the Owner's token shall be the owner expressed by the implementation contract via the owner() interface which shall override the ERC167 owner interface typically seen at the time of this publication.
 
 Owner's Token ID #1 shall own the first implementation deployment, Owner's Token ID #2 shall own the second implementation deployment, and so on.
+### Constructor
+```solidity
+constructor(address ownersImplementation_, address cloneImplementation_,
+  string memory name_,
+  string memory symbol_,
+  string memory tokenURI_,
+  uint256 maxSupply_,
+  uint256 maxMint_) {
+        _ownersImplementation = ownersImplementation_;
+        _cloneImplementation = cloneImplementation_;
+        _createOwnersContract(name_, symbol_, tokenURI_, maxSupply_, maxMint_);
+    }
+```
 
 ### Interfaces
+
 
 #### Public Interfaces
 ```solidity
@@ -70,7 +84,13 @@ function OWNERS_IMPLEMENTATION() public view returns (address)
 
 #### Internal Interfaces
 ```solidity
-function _createOwnersContract(string memory name_, string memory symbol_, string memory tokenURI_, uint256 maxSupply_, uint256 maxMint_) internal returns (address)
+function _createOwnersContract(string memory name_,
+  string memory symbol_,
+  string memory tokenURI_,
+  uint256 maxSupply_,
+  uint256 maxMint_)
+  internal returns (address)
+
 function _clone(address implementation_) public returns (address instance)
 ```
 ## Rationale
