@@ -1,5 +1,5 @@
 ---
-title: <The EIP title is a few words, not a complete sentence>
+title: A Factory and Registration based specification for ERC721 Ownership of Smart Contracts
 description: <Description is one full (short) sentence>
 author: <a comma separated list of the author's or authors' name + GitHub username (in parenthesis), or name and email (in angle brackets).  Example, FirstName LastName (@GitHubUsername), FirstName LastName <foo@bar.com>, FirstName (@GitHubUsername) and GitHubUsername (@GitHubUsername)>
 discussions-to: <URL>
@@ -30,29 +30,35 @@ requires: <EIP number(s)> # Only required when you reference an EIP in the `Spec
   TODO: Remove this comment before submitting
 -->
 
+This EIP's primary purpose is to enable the safe transferability of 
+
 ## Motivation
-
-<!--
-  This section is optional.
-
-  The motivation section should include a description of any nontrivial problems the EIP solves. It should not describe how the EIP solves those problems, unless it is not immediately obvious. It should not describe why the EIP should be made into a standard, unless it is not immediately obvious.
-
-  With a few exceptions, external links are not allowed. If you feel that a particular resource would demonstrate a compelling case for your EIP, then save it as a printer-friendly PDF, put it in the assets folder, and link to that copy.
-
-  TODO: Remove this comment before submitting
--->
+There are several motivations for this framework:
+- Enable the safe transferablity and sale of contracts on open markets.
+- Reduce the deployment costs of look-alike contracts
+- Enable a system for contract registration or contract portfolio mgmt
 
 ## Specification
-
-<!--
-  The Specification section should describe the syntax and semantics of any new feature. The specification should be detailed enough to allow competing, interoperable implementations for any of the current Ethereum platforms (besu, erigon, ethereumjs, go-ethereum, nethermind, or others).
-
-  It is recommended to follow RFC 2119 and RFC 8170. Do not remove the key word definitions if RFC 2119 and RFC 8170 are followed.
-
-  TODO: Remove this comment before submitting
--->
-
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119 and RFC 8174.
+
+A Factory shall be constructed with two parameters:
+ - ERC721 compliant Owner's contract address
+ - an implementation contract address.
+
+Upon deployment of the factory, the Owner's contract shall be deployed and the first owners' token shall be minted as Token ID# 0.
+
+Owner's Token ID #0 shall own the Owner's contract.
+
+The Owner of the Owner's contract may choose to mint more Owner's tokens on the Owner's contract. 
+
+Owner's tokens can be spent at the Factory. Upon spending an Owner's token, a clone of the implementation shall be deployed and assigned to the spent Owner's token. 
+
+The bearer of the Owner's token shall be the owner expressed by the implementation contract via the owner() interface which shall override the ERC167 owner interface typically seen at the time of this publication.
+
+Owner's Token ID #1 shall own the first implementation deployment, Owner's Token ID #2 shall own the second implementation deployment, and so on.
+
+
+
 
 ## Rationale
 
@@ -93,6 +99,158 @@ No backward compatibility issues found.
 -->
 
 ## Reference Implementation
+
+##### The minimum implementation must ultimately deploy three contracts:
+- an ERC721 and **eip9999*** compliant contract to act as the Owner's tokens' contract
+- a **EIP9999** compliant contract to act as the implementation contract
+- a factory contract to as a registry
+
+
+
+#### ERC721aOwnersBase.sol
+```solidity
+// SPDX-License-Identifier: MIT
+// Original Creator: Baby Coby
+// Once a Coby, Always a Coby.
+
+pragma solidity ^0.8.0;
+
+
+import '@openzeppelin/contracts/utils/Context.sol';
+import '@openzeppelin/contracts/access/Ownable.sol';
+import "../../token/ERC721aGatedBaseV2/ERC721aGatedBaseV2.sol";
+
+/**
+ * @dev
+ */
+
+contract GenericFactory is Context, Ownable {
+    event Deployed(address addr);
+    
+    // Data for Collection, currently this only reserves 20 bytes.
+    struct CollectionData {
+        address contractAddress;
+    }
+    
+    address private _ownersImplementation;
+    address private _cloneImplementation;
+    mapping (uint256 => CollectionData) private _collectionRegistry;
+
+    /**
+    * @dev
+    */
+    constructor(address ownersImplementation_, address cloneImplementation_, string memory name_, string memory symbol_, string memory tokenURI_, uint256 maxSupply_, uint256 maxMint_) {
+        _ownersImplementation = ownersImplementation_;
+        _cloneImplementation = cloneImplementation_;
+        _createOwnersContract(name_, symbol_, tokenURI_, maxSupply_, maxMint_);
+    }
+
+    /**
+    * @dev View of Owners Token
+    */
+    function OWNERS_ADDR() public view returns (address) {
+        return _collectionRegistry[0].contractAddress;
+    }
+
+    /**
+    * @dev View of contract addresses registered
+    */
+    function collectionRegistry(uint256 tokenId_) public view returns (address) {
+        return _collectionRegistry[tokenId_].contractAddress;
+    }
+
+    /**
+    * @dev Address of base contract
+    */
+    function cloneImplementation() public view returns (address) {
+        return _cloneImplementation;
+    }
+
+    /**
+    * @dev Address of base contract
+    */
+    function ownersImplementation() public view returns (address) {
+        return _ownersImplementation;
+    }
+
+    /**
+    * @dev Creates Owners token, which are required to be spent to assign ownership to a factory-enabled contract.
+    */
+    function _createOwnersContract(string memory name_, string memory symbol_, string memory tokenURI_, uint256 maxSupply_, uint256 maxMint_) internal returns (address) {
+        address newCollection;
+        newCollection = _clone(_ownersImplementation);
+        ERC721aGatedBaseV2(newCollection).initialize(0, name_, symbol_, tokenURI_, maxSupply_, maxMint_);
+        emit Deployed(newCollection);
+        _collectionRegistry[0].contractAddress = newCollection;
+        
+        return _collectionRegistry[0].contractAddress;
+    }
+
+
+    
+    fallback() external payable {
+        address OWNERS_ADDR_ = OWNERS_ADDR();
+        uint256 tokenId_;
+        
+        assembly {
+            calldatacopy(0x0, 4, 36)
+            tokenId_ := mload(0x0)
+        }
+
+        require(ERC721aGatedBaseV2(OWNERS_ADDR_).ownerOf(tokenId_) == msg.sender, "Sender is not authorized to spend Owners token.");
+        require(_collectionRegistry[tokenId_].contractAddress == address(0), "Owners token is already spent.");
+
+        address newCollection;
+        newCollection = _clone(_cloneImplementation);
+        _collectionRegistry[tokenId_].contractAddress = newCollection;
+        emit Deployed(newCollection);
+
+        // Execute external function from _cloneImplementation using delegatecall and return any value
+        assembly {
+            
+            // copy function selector and any arguemnts
+            calldatacopy(0, 0, calldatasize())
+            // execute function call using the newCollection address
+            let result := call(gas(), newCollection, callvalue(), 0, calldatasize(), 0, 0)
+
+            // get any return value
+            returndatacopy(0, 0, returndatasize())
+            // return any return value or error back to the caller
+            switch result
+                case  0 {
+                     revert(0, returndatasize())
+                }
+                default {
+                    return(0, returndatasize())
+                }
+
+        }
+        
+        
+
+       
+    }
+
+    
+    /**
+    * @dev Clones the implementation
+    */
+    function _clone(address implementation_) public returns (address instance) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
+            mstore(add(ptr, 0x14), shl(0x60, implementation_))
+            mstore(add(ptr, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
+            instance := create(0, ptr, 0x37)
+        }
+        require(instance != address(0), "ERC1167: create failed");
+    }
+       
+
+}
+
+```
 
 <!--
   This section is optional.
