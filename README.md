@@ -41,6 +41,7 @@ There are several motivations for this framework:
 ## Specification
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119 and RFC 8174.
 
+### Overview
 A Factory shall be constructed with two parameters:
  - ERC721 compliant Owner's contract address
  - an implementation contract address.
@@ -57,9 +58,21 @@ The bearer of the Owner's token shall be the owner expressed by the implementati
 
 Owner's Token ID #1 shall own the first implementation deployment, Owner's Token ID #2 shall own the second implementation deployment, and so on.
 
+### Interfaces
 
+#### Public Interfaces
+```solidity
+function ownersAddr() public view returns (address) 
+function collectionRegistry(uint256 tokenId_) public view returns (address) 
+function CLONE_IMPLEMENTATION() public view returns (address) 
+function OWNERS_IMPLEMENTATION() public view returns (address) 
+```
 
-
+#### Internal Interfaces
+```solidity
+function _createOwnersContract(string memory name_, string memory symbol_, string memory tokenURI_, uint256 maxSupply_, uint256 maxMint_) internal returns (address)
+function _clone(address implementation_) public returns (address instance)
+```
 ## Rationale
 
 ### Problem #1 Lack of support for transferablity or sale of smart contracts on open markets.
